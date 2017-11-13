@@ -1,0 +1,109 @@
+Goal: Create a network of regulation by master transcription factors from ATAC-seq data
+
+Input data: ATAC-seq peaks (coordinates and heights) detected by HMCan: https://bitbucket.org/pyminer/hmcan Citation: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3834794/
+
+Data availability: I will share with you ATAC-seq data for GM12878, K562, SKNMC and H1hES cells in a separate email.
+
+ 
+
+Additional data you will need for hg19:
+
+- TADs in human cells from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63525 , a file containing all possible TADs can be downloaded from https://mycore.core-cloud.net/index.php/s/SR0EsJ2tbth53PC
+
+- predicted promoter-enhancer interactions in human cells (FANTOM5 dataset) from https://www.ncbi.nlm.nih.gov/pubmed/24670763 . The corresponding file can be downloaded from https://mycore.core-cloud.net/index.php/s/GVVVfiClw48vkY8
+
+- HOCOMOCO database of TF motifs (+ PWM thresholds corresponding to p-value of 0.0001) Citation: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4702883/ PWMs and thresholds can be downloaded from http://hocomoco11.autosome.ru/
+
+ 
+
+Steps:
+
+ 
+
+1. Annotate ATAC-seq peaks as
+
+- promoters (i.e. regions overlapping +-5Kb regions around gene transcription start sites (TSSs))
+
+- enhancers (everything else)*
+
+* strong CTCF binding sites will be annotated later
+
+-- нужно выделить пики из *.narrowPeaks - сделать файл с ними
+-- выделить TSS из hg19
+-- найти где они пересекаются в регионе +-5Kb от TSS - промотеры, остальные .narrowPeaks = энхансеры
+
+ 
+
+2. Make a list of genes that have ATAC-seq peaks in promoters. All genes without ATAC-seq peaks in the promoter will be considered as "not expressed" and will be excluded from further analysis.
+
+ 
+
+3. Assign enhancers and promoters to genes
+
+- for promoters it is rather straight forwards. However if TSSs of two genes are very close a promoter can be assigned to two genes
+
+- for enhancers:
+
+                o if this enhancer is present (e.g. overlaps) an enhancer in the FANTOM5 database, assign it to genes from FANTOM5
+
+                o if not, assign enhancer to all expressed genes in a TAD
+
+ 
+
+4. Detect HOCOMOCO TFBS motifs in enhancers and promoters but scanning corresponding DNA sequences with HOCOMOCO PWMs and (10^-4) affinity thresholds (I hope there exists already a module for this written in Python that you can find and use)
+
+ 
+
+5. Construct a graph
+
+- nodes include information about
+
+                o gene name *
+
+                o is it a TF *
+
+                o for TFs: outgoing edges  *
+
+                o for all genes including TFs: incoming edges  *
+
+                o incoming score = log2(sum scores of incoming edges) ***
+
+                o outgoing score = log2(sum scores of outgoing edges) ***
+
+- edges include information about
+
+                o regulating TF  *
+
+                o regulated gene  *
+
+                o number of enhancer elements  *
+
+                o total number of binding motif hits (in all enhancers+promoter) *
+
+                o information as to whether the gene promoter is bound or it is only enhancers   *
+
+                o edge score = (total number of PWM hits) x (total number of ATAC-seq peaks for the target gene: enhancers+promoter with a motif hit)  **
+
+* - information to be filled out first
+
+** - information filled out second
+
+*** - information filled out third
+
+ 
+
+6. Analyze the graph
+
+- detect putative master regulator TFs as nodes with
+
+                o high* outgoing scores
+
+                o thick* "auto"-edge (e.g. the TF binds to its own gene to many enhancer regions)
+
+                o all master TFs should be connected by edges (probably with score* >3)
+
+* we have to look at the corresponding distributions and known master TFs to select thresholds on these scores
+
+ 
+
+7. Summarize the result in output files and a summary graph
