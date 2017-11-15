@@ -19,22 +19,22 @@ def main():
             open_peak = {}
         else:
             open_tss = {tss: tss_end for tss, tss_end in open_tss.items() if start < tss_end }
-            open_peak = {peak: peak_end for peak, peak_end in open_peak.items() if start < peak_end }
+            open_peak = {peak: (peak_start, peak_end) for peak, (peak_start, peak_end) in open_peak.items() if start < peak_end }
 
         prev_chrom = chrom
 
         if kind == 'TSS':
             tss = name
             open_tss[tss] = end
-            for peak in open_peak:
-                print(chrom, start, end, peak, tss)
+            for peak, (peak_start, peak_end) in open_peak.items():
+                print(chrom, peak_start, peak_end, peak, tss, sep="\t")
 
         if kind == 'peak':
-            peak = name
-            open_peak[peak] = end
+            peak, peak_start, peak_end = name, start, end
+            open_peak[peak] = peak_start, peak_end
             for tss in open_tss:
-                print(chrom, start, end, peak, tss)
-            
+                print(chrom, peak_start, peak_end, peak, tss, sep="\t")
+
 
 if __name__ == '__main__':
     main()

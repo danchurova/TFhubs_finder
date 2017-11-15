@@ -14,6 +14,8 @@ function process() {
 	promoters_output=output/${file}.promoters.bed
 	uniq_promoters_output=output/${file}.uniq_promoters
 	enhancers_output=output/${file}.enhancers.bed
+        combined_enhanc_output=output/${file}.comb_enhanc.bed
+        FANTOM5_enhancers_output=output/${file}.FANTOM5_enhanc.bed
 
 	echo "filtering $file with threshold $threshold..."
 	cat $input | awk "{if (\$5 > $threshold) {print}}" | sort -k1,1 -k2,2n > $filtered_output
@@ -26,7 +28,10 @@ function process() {
 	echo "looking for enhancers..."
 	cat $promoters_output | awk '{print $4}' | uniq > $uniq_promoters_output
 	python3 ./enhancers.py $uniq_promoters_output $filtered_output > $enhancers_output
-	
+        echo "analyzing found enhancers..."
+        cat data/hg19_enhancer_tss_associations_FANTOM5data.bed | tail -n +3 > data/hg19_FANTOM5data.bed
+        cat $enhancers_output data/hg19_FANTOM5data.bed | sort -k1,1 -k2,2n | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,$4}' > $combined_enhanc_output 
+	cat $combined_enhanc_output | python3 ./enhancers2.py > $FANTOM5_enhancers_output 
 	 
 }
 echo "getting transcripts..."
