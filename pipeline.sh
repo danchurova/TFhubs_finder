@@ -3,6 +3,9 @@
 rm -r output
 mkdir output || true
 
+rm -r output_fasta
+mkdir output_fasta || true
+
 function process() {
 	file=$1
 	threshold=$2
@@ -16,7 +19,11 @@ function process() {
         enhancers_left_output=output/${file}.enhanc_left.bed
         combined_enhanc_tads_output=output/${file}.comb_enhanc_tads.bed
         unfiltered_tads_enhanc_output=output/${file}.unfilt_enhanc_tads.bed
+        TADS_with_repeats_output=output/${file}.TADS_with_repeats
         TADS_enhancers_output=output/${file}.TADS_enhanc.bed
+        promoters_fasta_output=output_fasta/${file}.promoters.fa
+        FANTOM5_enhanc_fasta_output=output_fasta/${file}.FANTOM5.fa
+        TADS_enhanc_fasta_output=output_fasta/${file}.TADS.fa
         
 
 
@@ -38,14 +45,15 @@ function process() {
         
         echo "5. looking for TADS enhancers..."
         python3 ./enhancers_left.py $FANTOM5_enhancers_output $enhancers_output > $enhancers_left_output
-        echo "5.1"
         cat data/allTADS.bed | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,"TADS",$4}' > $combined_enhanc_tads_output
-	echo "5.2"
         cat $enhancers_left_output $combined_enhanc_tads_output | sort -k1,1 -k2,2n | python3 intersect.py TADS > $unfiltered_tads_enhanc_output
-        
-        echo "5.3"
-        python3 ./filter_tads.py $promoters_output $unfiltered_tads_enhanc_output > $TADS_enhancers_output
+        python3 ./filter_tads.py $promoters_output $unfiltered_tads_enhanc_output >  $TADS_with_repeats_output
+        python3 merge_TADS.py $TADS_with_repeats_output > $TADS_enhancers_output
 
+        echo "6. making fasta of promoters and enhancers..."
+        bedtools getfasta -fi data/GRCh37.p13.genome.fa -bed $promoters_output -name -fo $promoters_fasta_output
+        bedtools getfasta -fi data/GRCh37.p13.genome.fa -bed $FANTOM5_enhancers_output -name -fo $FANTOM5_enhanc_fasta_output
+        bedtools getfasta -fi data/GRCh37.p13.genome.fa -bed $TADS_enhancers_output -name -fo $TADS_enhanc_fasta_output
         echo "done!" 
 }
 echo "getting transcripts..."
