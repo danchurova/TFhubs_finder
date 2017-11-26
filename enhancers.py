@@ -10,14 +10,14 @@ def main():
 
 
     for line in promoters.readlines():
-        peak_1 = line.strip()
-        promoter_peaks.add(peak_1)
+        peak = line.strip()
+        promoter_peaks.add(peak)
 
-    for line_2 in all_peaks.readlines():
-        pieces = line_2.strip().split("\t")
-        chrom, start, end, peak_2,_,_,_,_,_,_ = pieces
-        if peak_2 not in promoter_peaks:
-            print(chrom, start, end, peak_2, sep="\t")
+    for line in all_peaks.readlines():
+        pieces = line.strip().split("\t")
+        chrom, start, end, kind, peak = pieces
+        if peak not in promoter_peaks:
+            print(chrom, start, end, kind, peak, sep="\t")
         
 if __name__ == '__main__':
     main()	

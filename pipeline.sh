@@ -8,36 +8,45 @@ function process() {
 	threshold=$2
 	input=data/$file
 
-	filtered_output=output/${file}.filtered.bed
 	prepared_output=output/${file}.prepared
-	combined_output=output/${file}.combined
 	promoters_output=output/${file}.promoters.bed
 	uniq_promoters_output=output/${file}.uniq_promoters
 	enhancers_output=output/${file}.enhancers.bed
-        combined_enhanc_fantom5_output=output/${file}.comb_enhanc_f5.bed
         FANTOM5_enhancers_output=output/${file}.FANTOM5_enhanc.bed
         enhancers_left_output=output/${file}.enhanc_left.bed
         combined_enhanc_tads_output=output/${file}.comb_enhanc_tads.bed
+        unfiltered_tads_enhanc_output=output/${file}.unfilt_enhanc_tads.bed
+        TADS_enhancers_output=output/${file}.TADS_enhanc.bed
+        
 
 
-	echo "filtering $file with threshold $threshold..."
-	cat $input | awk "{if (\$5 > $threshold) {print}}" | sort -k1,1 -k2,2n > $filtered_output
-	echo "preparing peaks..."
-	cat $filtered_output | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,"peak",$4}' > $prepared_output
-	echo "combining with TSS data..."
-	cat $prepared_output output/promoter_regions.txt | sort -k1,1 -k2,2n > $combined_output
-	echo "looking for intersections..."
-	cat $combined_output | python3 ./intersect.py  > $promoters_output
-	echo "looking for enhancers..."
+	echo "1. filtering $file with threshold $threshold..."
+	cat $input | awk "BEGIN {OFS=\"\t\"} {if (\$5 > $threshold) {print \$1,\$2,\$3,\"peak\",\$4}}" > $prepared_output
+	
+	echo "2. looking for promoters..."
+	cat $prepared_output output/promoter_regions.txt | sort -k1,1 -k2,2n | python3 intersect.py TSS > $promoters_output
+        # output: chrom, start, end, peak, gene
+
+	echo "3. looking for enhancers..."
 	cat $promoters_output | awk '{print $4}' | uniq > $uniq_promoters_output
-	python3 ./enhancers.py $uniq_promoters_output $filtered_output > $enhancers_output
-        echo "analyzing found enhancers..."
-        cat data/hg19_enhancer_tss_associations_FANTOM5data.bed | tail -n +3 > data/hg19_FANTOM5data.bed
-        cat $enhancers_output data/hg19_FANTOM5data.bed | sort -k1,1 -k2,2n | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,$4}' > $combined_enhanc_fantom5_output 
-	cat $combined_enhanc_fantom5_output | python3 ./enhancers2.py > $FANTOM5_enhancers_output
+	python3 enhancers.py $uniq_promoters_output $prepared_output > $enhancers_output
+        # output: chrom, start, end, "peak", peak
+
+        echo "4. looking for fantom5 enhancers..."
+        cat data/hg19_enhancer_tss_associations_FANTOM5data.bed | tail -n +3 | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,"genes",$4}' > output/hg19_FANTOM5data.bed
+        cat $enhancers_output output/hg19_FANTOM5data.bed | sort -k1,1 -k2,2n | python3 intersect.py genes > $FANTOM5_enhancers_output
+        
+        echo "5. looking for TADS enhancers..."
         python3 ./enhancers_left.py $FANTOM5_enhancers_output $enhancers_output > $enhancers_left_output
-        cat $enhancers_left_output data/allTADs.bed | sort -k1,1 -k2,2n | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,$4}' > $combined_enhanc_tads_output
-	 
+        echo "5.1"
+        cat data/allTADS.bed | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,"TADS",$4}' > $combined_enhanc_tads_output
+	echo "5.2"
+        cat $enhancers_left_output $combined_enhanc_tads_output | sort -k1,1 -k2,2n | python3 intersect.py TADS > $unfiltered_tads_enhanc_output
+        
+        echo "5.3"
+        python3 ./filter_tads.py $promoters_output $unfiltered_tads_enhanc_output > $TADS_enhancers_output
+
+        echo "done!" 
 }
 echo "getting transcripts..."
 

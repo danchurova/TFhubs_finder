@@ -1,0 +1,9 @@
+data/
+Details
+output/
+output_fasta/
+*.jar
+R_functions/
+TFBS_output/
+\.*
+!.gitignore
