@@ -11,7 +11,7 @@ function process() {
 	threshold=$2
 	input=data/$file
 
-	prepared_output=output/${file}.prepared
+	prepared_output=output/${file}.prepared.bed
 	promoters_output=output/${file}.promoters.bed
 	uniq_promoters_output=output/${file}.uniq_promoters
 	enhancers_output=output/${file}.enhancers.bed
@@ -40,7 +40,7 @@ function process() {
         # output: chrom, start, end, "peak", peak
 
         echo "4. looking for fantom5 enhancers..."
-        cat data/hg19_enhancer_tss_associations_FANTOM5data.bed | tail -n +3 | awk 'BEGIN {OFS="\t"} {print $1,$2,$3,"genes",$4}' > output/hg19_FANTOM5data.bed
+        cat data/hg19_enhancer_tss_associations_FANTOM5data.bed | tail -n +3 | awk 'BEGIN {OFS="\t"} {print $1,$6-200,$6+200,"genes",$4}' > output/hg19_FANTOM5data.bed
         cat $enhancers_output output/hg19_FANTOM5data.bed | sort -k1,1 -k2,2n | python3 intersect.py genes > $FANTOM5_enhancers_output
         
         echo "5. looking for TADS enhancers..."
@@ -66,7 +66,7 @@ BEGIN {OFS="\t"}{
 echo "done!"
 
 echo "determining promoter regions..."
-cat output/gencode.v19.TSS.txt | awk 'BEGIN {OFS="\t"}{print $1,$3-5000,$4+5000,"TSS",$5}' > output/promoter_regions.txt
+cat output/gencode.v19.TSS.txt | awk 'BEGIN {OFS="\t"}{print $1,$3-5000,$4+5000,"TSS",$5}' > output/promoter_regions.txt.bed
 echo "done!"
 
 process ATAC.GM12878.50Kcells.rep1_peaks.narrowPeak 3.74665
