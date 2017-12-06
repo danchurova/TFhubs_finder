@@ -31,7 +31,7 @@ function process() {
 	cat $input | awk "BEGIN {OFS=\"\t\"} {if (\$5 > $threshold) {print \$1,\$2,\$3,\"peak\",\$4}}" > $prepared_output
 	
 	echo "2. looking for promoters..."
-	cat $prepared_output output/promoter_regions.txt | sort -k1,1 -k2,2n | python3 intersect.py TSS > $promoters_output
+	cat $prepared_output output/promoter_regions.txt.bed | sort -k1,1 -k2,2n | python3 intersect.py TSS > $promoters_output
         # output: chrom, start, end, peak, gene
 
 	echo "3. looking for enhancers..."
