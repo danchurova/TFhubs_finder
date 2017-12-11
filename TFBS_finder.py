@@ -21,7 +21,7 @@ def main():
         print(tf)
         name = tf.split("/")[-1].replace(".pwm","")
         threshold = thresholds[name]
-        subprocess.call(['java','-jar', 'sarus.jar', "./output_fasta/ATAC.GM12878.50Kcells.rep1_peaks_promoters.fa.out", tf, threshold], stdout=open("TFBS_output/{}.txt".format(name), "w"))
+        subprocess.call(["java", "-cp", "sarus-26Nov2017.jar", "ru.autosome.SARUS", "./output_fasta/ATAC.GM12878.50Kcells.rep1_peaks.narrowPeak.promoters.fa", tf, threshold, "--output-bed", "skipn"], stdout=open("TFBS_output/{}.bed".format(name), "w"))
 
 if __name__ == '__main__':
     main()

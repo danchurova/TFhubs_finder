@@ -13,6 +13,7 @@ def main():
         chrom, start, end, peak_name, gene_name = line.strip().split("\t")
         if peak_name not in enhancers_f5: 
             enhancers_f5.add(peak_name)
+    
 
     for line2 in enhancers_all.readlines():
         chrom, start, end, kind, peak_name_a =  line2.strip().split("\t")

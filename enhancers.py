@@ -10,8 +10,9 @@ def main():
 
 
     for line in promoters.readlines():
-        peak = line.strip()
-        promoter_peaks.add(peak)
+        chrom, start, end, peak_name, gene_name = line.strip().split("\t")
+        if peak_name not in promoter_peaks:
+            promoter_peaks.add(peak_name)
 
     for line in all_peaks.readlines():
         pieces = line.strip().split("\t")
