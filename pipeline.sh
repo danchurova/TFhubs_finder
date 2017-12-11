@@ -6,6 +6,11 @@ mkdir output || true
 rm -r output_fasta
 mkdir output_fasta || true
 
+rm -r TFBS_output
+mkdir TFBS_output || true
+
+
+
 function process() {
 	file=$1
 	threshold=$2
@@ -43,9 +48,7 @@ function process() {
         echo "4. looking for fantom5 enhancers..."
         cat data/hg19_enhancer_tss_associations_FANTOM5data.bed | tail -n +3 | awk 'BEGIN {OFS="\t"} {print $1,$7-200,$7+200,"genes",$4}' > output/hg19_FANTOM5data.bed
         cat $enhancers_output output/hg19_FANTOM5data.bed | sort -k1,1 -k2,2n | python3 intersect.py genes > $FANTOM5_enhancers_output
-        echo "done!"
-        echo "getting uniq fantom5 enhancers..."
-        #cat $FANTOM_enhancers_output | sort -k4,4 | sort -u -k4,4 > $uniq_FANTOM5_enhanc_output
+        cat $FANTOM5_enhancers_output | sort -u -k4,4 > $uniq_FANTOM5_enhanc_output
         echo "done!"
         
         echo "5. looking for TADS enhancers..."
@@ -57,9 +60,22 @@ function process() {
 
         echo "6. making fasta of promoters and enhancers..."
         bedtools getfasta -fi data/GRCh37.p13.genome.fa -bed $uniq_promoters_output -name -fo $promoters_fasta_output
-        bedtools getfasta -fi data/GRCh37.p13.genome.fa -bed $FANTOM5_enhancers_output -name -fo $FANTOM5_enhanc_fasta_output
+        bedtools getfasta -fi data/GRCh37.p13.genome.fa -bed $uniq_FANTOM5_enhanc_output -name -fo $FANTOM5_enhanc_fasta_output
         bedtools getfasta -fi data/GRCh37.p13.genome.fa -bed $TADS_enhancers_output -name -fo $TADS_enhanc_fasta_output
-        echo "done!" 
+        echo "done!"
+        
+        tail -n +2 data/HOCOMOCOv11_core_standard_thresholds_HUMAN_mono.txt > output/HOCOMOCO_thresholds.txt
+        mkdir TFBS_output/promoters
+        echo "looking for TFBS in promoters..."
+        python3 TFBS_finder_promoters.py output/HOCOMOCO_thresholds.txt $promoters_fasta_output
+        mkdir TFBS_output/FANTOM5
+
+        echo "looking for TFBS in FANTOM5 enhancers..."
+        python3 TFBS_finder_f5.py output/HOCOMOCO_thresholds.txt $FANTOM5_enhanc_fasta_output
+        mkdir TFBS_output/TADS
+        echo "looking for TFBS in TADS enhancers..."
+        python3 TFBS_finder_TADS.py output/HOCOMOCO_thresholds.txt $TADS_enhanc_fasta_output
+         
 }
 echo "getting transcripts..."
 
@@ -75,6 +91,6 @@ cat output/gencode.v19.TSS.txt | awk 'BEGIN {OFS="\t"}{print $1,$3-5000,$4+5000,
 echo "done!"
 
 process ATAC.GM12878.50Kcells.rep1_peaks.narrowPeak 3.74665
-#process ATAC.H1hES.50Kcells.rep2_peaks.narrowPeak 4.52314
-#process ATAC.K562.50Kcells.rep1_peaks.narrowPeak 4.99941
+process ATAC.H1hES.50Kcells.rep2_peaks.narrowPeak 4.52314
+process ATAC.K562.50Kcells.rep1_peaks.narrowPeak 4.99941
 
