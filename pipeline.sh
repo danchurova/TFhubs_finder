@@ -9,7 +9,9 @@ mkdir output_fasta || true
 rm -r TFBS_output
 mkdir TFBS_output || true
 
-
+mkdir TFBS_output/promoters
+mkdir TFBS_output/FANTOM5
+mkdir TFBS_output/TADS
 
 function process() {
 	file=$1
@@ -65,14 +67,13 @@ function process() {
         echo "done!"
         
         tail -n +2 data/HOCOMOCOv11_core_standard_thresholds_HUMAN_mono.txt > output/HOCOMOCO_thresholds.txt
-        mkdir TFBS_output/promoters
+
         echo "looking for TFBS in promoters..."
         python3 TFBS_finder_promoters.py output/HOCOMOCO_thresholds.txt $promoters_fasta_output
-        mkdir TFBS_output/FANTOM5
 
         echo "looking for TFBS in FANTOM5 enhancers..."
         python3 TFBS_finder_f5.py output/HOCOMOCO_thresholds.txt $FANTOM5_enhanc_fasta_output
-        mkdir TFBS_output/TADS
+        
         echo "looking for TFBS in TADS enhancers..."
         python3 TFBS_finder_TADS.py output/HOCOMOCO_thresholds.txt $TADS_enhanc_fasta_output
          
